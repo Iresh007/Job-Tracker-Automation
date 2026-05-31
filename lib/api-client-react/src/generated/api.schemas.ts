@@ -122,6 +122,8 @@ export interface Application {
   coverLetter?: string | null;
   /** @nullable */
   matchScore?: number | null;
+  /** @nullable */
+  interviewAt?: string | null;
   appliedAt: string;
   createdAt: string;
   updatedAt?: string;
@@ -153,6 +155,8 @@ export interface ApplicationInput {
   /** @nullable */
   matchScore?: number | null;
   /** @nullable */
+  interviewAt?: string | null;
+  /** @nullable */
   appliedAt?: string | null;
 }
 
@@ -177,6 +181,8 @@ export interface ApplicationUpdate {
   coverLetter?: string | null;
   /** @nullable */
   matchScore?: number | null;
+  /** @nullable */
+  interviewAt?: string | null;
 }
 
 export interface BatchApplicationInput {

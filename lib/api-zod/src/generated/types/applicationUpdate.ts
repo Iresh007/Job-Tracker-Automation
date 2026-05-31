@@ -17,4 +17,6 @@ export interface ApplicationUpdate {
   coverLetter?: string | null;
   /** @nullable */
   matchScore?: number | null;
+  /** @nullable */
+  interviewAt?: string | null;
 }

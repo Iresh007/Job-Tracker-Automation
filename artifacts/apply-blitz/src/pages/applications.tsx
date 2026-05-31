@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useGetApplications, useUpdateApplication, useDeleteApplication, getGetApplicationsQueryKey, getGetDashboardStatsQueryKey } from "@workspace/api-client-react";
-import { Briefcase, Search, Download, LayoutGrid, List, Trash2, ExternalLink, Pencil } from "lucide-react";
+import { Briefcase, Search, Download, LayoutGrid, List, Trash2, ExternalLink, Pencil, CalendarClock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -111,6 +111,11 @@ export default function Applications() {
     queryClient.invalidateQueries({ queryKey: getGetApplicationsQueryKey() });
   };
 
+  const handleInterviewChange = async (id: number, interviewAt: string | null) => {
+    await updateApp.mutateAsync({ id, data: { interviewAt: interviewAt || null } });
+    queryClient.invalidateQueries({ queryKey: getGetApplicationsQueryKey() });
+  };
+
   const handleDelete = async (id: number) => {
     await deleteApp.mutateAsync({ id });
     queryClient.invalidateQueries({ queryKey: getGetApplicationsQueryKey() });
@@ -188,7 +193,7 @@ export default function Applications() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  {["Company", "Role", "Status", "Match", "Applied", "Notes", ""].map((h) => (
+                  {["Company", "Role", "Status", "Match", "Applied", "Interview", "Notes", ""].map((h) => (
                     <th key={h} className="text-left text-xs font-medium text-muted-foreground px-4 py-3">{h}</th>
                   ))}
                 </tr>
@@ -222,6 +227,19 @@ export default function Applications() {
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                       {format(new Date(app.appliedAt), "MMM d, yyyy")}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5 min-w-[160px]">
+                        <CalendarClock className={`h-3.5 w-3.5 shrink-0 ${app.status === "interviewing" ? "text-amber-400" : "text-muted-foreground/30"}`} />
+                        <input
+                          type="datetime-local"
+                          value={app.interviewAt ? format(new Date(app.interviewAt), "yyyy-MM-dd'T'HH:mm") : ""}
+                          onChange={(e) => handleInterviewChange(app.id, e.target.value || null)}
+                          className="text-xs bg-transparent border-0 text-muted-foreground focus:text-foreground focus:outline-none w-[140px] cursor-pointer disabled:opacity-30 disabled:cursor-default [color-scheme:dark]"
+                          disabled={app.status !== "interviewing"}
+                          title={app.status !== "interviewing" ? "Set status to Interviewing to schedule" : "Schedule interview"}
+                        />
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <InlineNotesEditor id={app.id} notes={app.notes} onSave={handleNotesChange} />
@@ -270,6 +288,18 @@ export default function Applications() {
                           <span className={`text-xs font-semibold ${app.matchScore >= 80 ? "text-emerald-400" : app.matchScore >= 50 ? "text-amber-400" : "text-red-400"}`}>
                             {app.matchScore}% match
                           </span>
+                        )}
+                        {app.status === "interviewing" && (
+                          <div className="flex items-center gap-1">
+                            <CalendarClock className="h-3 w-3 text-amber-400 shrink-0" />
+                            <input
+                              type="datetime-local"
+                              value={app.interviewAt ? format(new Date(app.interviewAt), "yyyy-MM-dd'T'HH:mm") : ""}
+                              onChange={(e) => handleInterviewChange(app.id, e.target.value || null)}
+                              className="text-xs bg-transparent border-0 text-amber-400/80 focus:text-amber-300 focus:outline-none w-full cursor-pointer [color-scheme:dark]"
+                              title="Schedule interview"
+                            />
+                          </div>
                         )}
                         <InlineNotesEditor id={app.id} notes={app.notes} onSave={handleNotesChange} />
                       </CardContent>

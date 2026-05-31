@@ -22,6 +22,8 @@ export interface Application {
   coverLetter?: string | null;
   /** @nullable */
   matchScore?: number | null;
+  /** @nullable */
+  interviewAt?: string | null;
   appliedAt: string;
   createdAt: string;
   updatedAt?: string;

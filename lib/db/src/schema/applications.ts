@@ -12,6 +12,7 @@ export const applicationsTable = pgTable("applications", {
   tailoredResume: text("tailored_resume"),
   coverLetter: text("cover_letter"),
   matchScore: integer("match_score"),
+  interviewAt: timestamp("interview_at", { withTimezone: true }),
   appliedAt: timestamp("applied_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

@@ -164,6 +164,7 @@ export const GetApplicationsResponseItem = zod.object({
   "tailoredResume": zod.string().nullish(),
   "coverLetter": zod.string().nullish(),
   "matchScore": zod.number().nullish(),
+  "interviewAt": zod.string().nullish(),
   "appliedAt": zod.string(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
@@ -183,6 +184,7 @@ export const CreateApplicationBody = zod.object({
   "tailoredResume": zod.string().nullish(),
   "coverLetter": zod.string().nullish(),
   "matchScore": zod.number().nullish(),
+  "interviewAt": zod.string().nullish(),
   "appliedAt": zod.string().nullish()
 })
 
@@ -204,6 +206,7 @@ export const GetApplicationResponse = zod.object({
   "tailoredResume": zod.string().nullish(),
   "coverLetter": zod.string().nullish(),
   "matchScore": zod.number().nullish(),
+  "interviewAt": zod.string().nullish(),
   "appliedAt": zod.string(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
@@ -222,7 +225,8 @@ export const UpdateApplicationBody = zod.object({
   "notes": zod.string().nullish(),
   "tailoredResume": zod.string().nullish(),
   "coverLetter": zod.string().nullish(),
-  "matchScore": zod.number().nullish()
+  "matchScore": zod.number().nullish(),
+  "interviewAt": zod.string().nullish()
 })
 
 export const UpdateApplicationResponse = zod.object({
@@ -235,6 +239,7 @@ export const UpdateApplicationResponse = zod.object({
   "tailoredResume": zod.string().nullish(),
   "coverLetter": zod.string().nullish(),
   "matchScore": zod.number().nullish(),
+  "interviewAt": zod.string().nullish(),
   "appliedAt": zod.string(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
@@ -262,6 +267,7 @@ export const BatchCreateApplicationsBody = zod.object({
   "tailoredResume": zod.string().nullish(),
   "coverLetter": zod.string().nullish(),
   "matchScore": zod.number().nullish(),
+  "interviewAt": zod.string().nullish(),
   "appliedAt": zod.string().nullish()
 })),
   "dryRun": zod.boolean().optional()

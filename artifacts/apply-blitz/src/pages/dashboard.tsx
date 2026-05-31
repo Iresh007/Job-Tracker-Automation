@@ -1,11 +1,11 @@
 import { useGetDashboardStats, useGetDailyStats, useGetApplications } from "@workspace/api-client-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Target, Flame, TrendingUp, Send, Briefcase, ChevronRight } from "lucide-react";
+import { Target, Flame, TrendingUp, Send, Briefcase, ChevronRight, CalendarClock, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isAfter, isBefore, addDays, differenceInHours, differenceInMinutes } from "date-fns";
 
 const STATUS_COLORS: Record<string, string> = {
   applied: "bg-blue-500/20 text-blue-400 border-blue-500/30",
@@ -15,10 +15,28 @@ const STATUS_COLORS: Record<string, string> = {
   ghosted: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
 };
 
+function timeUntil(dt: Date): string {
+  const now = new Date();
+  const hrs = differenceInHours(dt, now);
+  if (hrs < 0) return "Past";
+  if (hrs === 0) {
+    const mins = differenceInMinutes(dt, now);
+    return mins <= 0 ? "Now" : `in ${mins}m`;
+  }
+  if (hrs < 24) return `in ${hrs}h`;
+  return format(dt, "MMM d");
+}
+
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useGetDashboardStats();
   const { data: daily, isLoading: dailyLoading } = useGetDailyStats();
   const { data: applications, isLoading: appsLoading } = useGetApplications({ status: undefined, search: undefined });
+
+  const now = new Date();
+  const upcomingInterviews = (applications ?? [])
+    .filter((a) => a.interviewAt && isAfter(new Date(a.interviewAt), now) && isBefore(new Date(a.interviewAt), addDays(now, 14)))
+    .sort((a, b) => new Date(a.interviewAt!).getTime() - new Date(b.interviewAt!).getTime())
+    .slice(0, 5);
 
   const recentApps = applications?.slice(0, 5) ?? [];
   const goal = stats?.dailyGoal ?? 50;
@@ -158,6 +176,55 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Upcoming Interviews */}
+      {(appsLoading || upcomingInterviews.length > 0) && (
+        <Card className="bg-card border-border">
+          <CardHeader className="pb-2 flex-row flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CalendarClock className="h-4 w-4 text-amber-400" />
+              <CardTitle className="text-sm font-semibold text-foreground">Upcoming Interviews</CardTitle>
+            </div>
+            <Link href="/applications">
+              <button className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors">
+                Manage <ChevronRight className="h-3 w-3" />
+              </button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            {appsLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {upcomingInterviews.map((app) => {
+                  const dt = new Date(app.interviewAt!);
+                  const countdown = timeUntil(dt);
+                  const isImminent = differenceInHours(dt, new Date()) < 24;
+                  return (
+                    <div key={app.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                      <div className="flex items-center gap-3">
+                        <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${isImminent ? "bg-amber-500/20" : "bg-muted"}`}>
+                          <Clock className={`h-4 w-4 ${isImminent ? "text-amber-400" : "text-muted-foreground"}`} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{app.role}</p>
+                          <p className="text-xs text-muted-foreground">{app.company}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-semibold ${isImminent ? "text-amber-400" : "text-foreground"}`}>{countdown}</p>
+                        <p className="text-xs text-muted-foreground">{format(dt, "EEE, MMM d · h:mm a")}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Applications */}
       <Card className="bg-card border-border">
