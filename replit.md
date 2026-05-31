@@ -1,36 +1,58 @@
-# [Project name]
+# ApplyBlitz
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A full-stack job application tracker & automation app that helps users send 50+ job applications per day with AI-tailored resumes and cover letters.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
+- `pnpm --filter @workspace/apply-blitz run dev` — run the frontend (port 18128)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `DATABASE_URL` — Postgres connection string (auto-provisioned)
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
+- Frontend: React + Vite + Tailwind CSS + shadcn/ui (dark theme)
+- Backend: Express 5
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
+- Charts: Recharts
 - Build: esbuild (CJS bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — API contract (source of truth)
+- `lib/api-client-react/src/generated/` — generated React Query hooks
+- `lib/api-zod/src/generated/` — generated Zod validation schemas
+- `lib/db/src/schema/` — Drizzle DB schema (profile.ts, applications.ts, savedJobs.ts)
+- `artifacts/api-server/src/routes/` — Express route handlers (profile, jobs, applications, ai, stats)
+- `artifacts/apply-blitz/src/pages/` — Frontend pages (dashboard, jobs, applications, ai-tailor, profile, settings)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- OpenAPI-first: all types flow from `openapi.yaml` → codegen → both server (Zod) and client (React Query hooks)
+- Job search falls back to mock data when `RAPIDAPI_KEY` is not set — app is functional without external APIs
+- AI tailoring falls back to mock resume/cover letter when `OPENAI_API_KEY` is not set
+- Single user profile (no auth) — profile table has one row per deployment
+- Applications use PostgreSQL timestamps for streak/daily stat calculations
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- **Dashboard**: Daily goal progress bar (X/50), streak tracker, 7-day bar chart, pipeline status breakdown, recent applications feed
+- **Find Jobs**: Search with filters (role, location, remote, date posted), job cards with match score badges, Quick Apply + batch apply ("Apply to All Selected"), save jobs
+- **My Applications**: Table + Kanban view toggle, status dropdown per row, CSV export, search/filter
+- **AI Tailor**: Paste job description → get tailored resume + cover letter + ATS match score with keyword badges
+- **Profile**: Name, target roles/locations, years of experience, skills, base resume text, salary range, LinkedIn URL
+- **Settings**: Daily goal, dry run mode toggle, API key status indicators
+
+## API Keys (optional — app works without them)
+
+- `OPENAI_API_KEY` — enables real AI resume/cover letter tailoring (GPT-4o)
+- `RAPIDAPI_KEY` — enables real job search (JSearch API on RapidAPI)
 
 ## User preferences
 
@@ -38,7 +60,9 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Run `pnpm --filter @workspace/api-spec run codegen` after every OpenAPI spec change before touching route handlers or frontend hooks
+- The `applications/batch` route must be registered BEFORE `applications/:id` to avoid Express matching "batch" as an ID
+- Job search returns 20 mock jobs when RAPIDAPI_KEY is absent — useful for dev/demo
 
 ## Pointers
 

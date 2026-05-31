@@ -3,13 +3,24 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: ApplyBlitz API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: profile
+    description: User profile operations
+  - name: jobs
+    description: Job discovery operations
+  - name: applications
+    description: Job application operations
+  - name: ai
+    description: AI resume/cover letter tailoring
+  - name: stats
+    description: Application stats and streaks
+
 paths:
   /healthz:
     get:
@@ -24,6 +35,323 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # === PROFILE ===
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Get user profile
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "404":
+          description: Profile not found
+    put:
+      operationId: upsertProfile
+      tags: [profile]
+      summary: Create or update user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileInput"
+      responses:
+        "200":
+          description: Profile saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+
+  # === JOBS ===
+  /jobs/search:
+    get:
+      operationId: searchJobs
+      tags: [jobs]
+      summary: Search for jobs from external APIs
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: location
+          in: query
+          schema:
+            type: string
+        - name: remote
+          in: query
+          schema:
+            type: boolean
+        - name: minSalary
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: maxSalary
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: datePosted
+          in: query
+          schema:
+            type: string
+            enum: [today, week, month]
+        - name: source
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobListing"
+
+  /jobs/saved:
+    get:
+      operationId: getSavedJobs
+      tags: [jobs]
+      summary: Get all saved jobs
+      responses:
+        "200":
+          description: Saved jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SavedJob"
+    post:
+      operationId: saveJob
+      tags: [jobs]
+      summary: Save a job listing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavedJobInput"
+      responses:
+        "201":
+          description: Job saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedJob"
+
+  /jobs/saved/{id}:
+    delete:
+      operationId: deleteSavedJob
+      tags: [jobs]
+      summary: Delete a saved job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # === APPLICATIONS ===
+  /applications:
+    get:
+      operationId: getApplications
+      tags: [applications]
+      summary: List all applications
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [applied, interviewing, rejected, offer, ghosted]
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Applications list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Application"
+    post:
+      operationId: createApplication
+      tags: [applications]
+      summary: Log a new job application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationInput"
+      responses:
+        "201":
+          description: Application created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  /applications/{id}:
+    get:
+      operationId: getApplication
+      tags: [applications]
+      summary: Get a single application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateApplication
+      tags: [applications]
+      summary: Update application status or notes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationUpdate"
+      responses:
+        "200":
+          description: Updated application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteApplication
+      tags: [applications]
+      summary: Delete an application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /applications/batch:
+    post:
+      operationId: batchCreateApplications
+      tags: [applications]
+      summary: Batch apply to multiple jobs at once
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchApplicationInput"
+      responses:
+        "201":
+          description: Batch apply result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchApplicationResult"
+
+  # === AI TAILORING ===
+  /ai/tailor:
+    post:
+      operationId: tailorResume
+      tags: [ai]
+      summary: AI-tailor resume and generate cover letter for a job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TailorInput"
+      responses:
+        "200":
+          description: Tailored resume + cover letter + match score
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TailorResult"
+
+  /ai/match-score:
+    post:
+      operationId: getMatchScore
+      tags: [ai]
+      summary: Get ATS keyword match score between resume and job description
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchScoreInput"
+      responses:
+        "200":
+          description: Match score result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchScoreResult"
+
+  # === STATS ===
+  /stats/dashboard:
+    get:
+      operationId: getDashboardStats
+      tags: [stats]
+      summary: Get dashboard summary stats
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /stats/daily:
+    get:
+      operationId: getDailyStats
+      tags: [stats]
+      summary: Get daily application counts (last 7 days)
+      responses:
+        "200":
+          description: Daily application stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DailyStatEntry"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +362,333 @@ components:
       required:
         - status
 
+    # --- Profile ---
+    Profile:
+      type: object
+      required: [id, name, targetRoles, targetLocations, yearsExperience, skills, resumeText]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        targetRoles:
+          type: string
+        targetLocations:
+          type: string
+        yearsExperience:
+          type: integer
+        skills:
+          type: string
+        resumeText:
+          type: string
+        salaryMin:
+          type: ["integer", "null"]
+        salaryMax:
+          type: ["integer", "null"]
+        emailUser:
+          type: ["string", "null"]
+        linkedinUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    ProfileInput:
+      type: object
+      required: [name, targetRoles, targetLocations, yearsExperience, skills, resumeText]
+      properties:
+        name:
+          type: string
+        targetRoles:
+          type: string
+        targetLocations:
+          type: string
+        yearsExperience:
+          type: integer
+        skills:
+          type: string
+        resumeText:
+          type: string
+        salaryMin:
+          type: ["integer", "null"]
+        salaryMax:
+          type: ["integer", "null"]
+        emailUser:
+          type: ["string", "null"]
+        linkedinUrl:
+          type: ["string", "null"]
+
+    # --- Job Listings ---
+    JobListing:
+      type: object
+      required: [externalId, title, company, location, source, applyUrl, description, postedAt]
+      properties:
+        externalId:
+          type: string
+        title:
+          type: string
+        company:
+          type: string
+        location:
+          type: string
+        source:
+          type: string
+        applyUrl:
+          type: string
+        description:
+          type: string
+        salary:
+          type: ["string", "null"]
+        matchScore:
+          type: ["integer", "null"]
+        isRemote:
+          type: boolean
+        postedAt:
+          type: string
+
+    SavedJob:
+      type: object
+      required: [id, externalId, title, company, location, source, applyUrl, description, postedAt, createdAt]
+      properties:
+        id:
+          type: integer
+        externalId:
+          type: string
+        title:
+          type: string
+        company:
+          type: string
+        location:
+          type: string
+        source:
+          type: string
+        applyUrl:
+          type: string
+        description:
+          type: string
+        salary:
+          type: ["string", "null"]
+        matchScore:
+          type: ["integer", "null"]
+        isRemote:
+          type: boolean
+        postedAt:
+          type: string
+        createdAt:
+          type: string
+
+    SavedJobInput:
+      type: object
+      required: [externalId, title, company, location, source, applyUrl, description, postedAt]
+      properties:
+        externalId:
+          type: string
+        title:
+          type: string
+        company:
+          type: string
+        location:
+          type: string
+        source:
+          type: string
+        applyUrl:
+          type: string
+        description:
+          type: string
+        salary:
+          type: ["string", "null"]
+        matchScore:
+          type: ["integer", "null"]
+        isRemote:
+          type: boolean
+        postedAt:
+          type: string
+
+    # --- Applications ---
+    Application:
+      type: object
+      required: [id, company, role, status, appliedAt, createdAt]
+      properties:
+        id:
+          type: integer
+        company:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+          enum: [applied, interviewing, rejected, offer, ghosted]
+        applyUrl:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        tailoredResume:
+          type: ["string", "null"]
+        coverLetter:
+          type: ["string", "null"]
+        matchScore:
+          type: ["integer", "null"]
+        appliedAt:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    ApplicationInput:
+      type: object
+      required: [company, role]
+      properties:
+        company:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+          enum: [applied, interviewing, rejected, offer, ghosted]
+        applyUrl:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        tailoredResume:
+          type: ["string", "null"]
+        coverLetter:
+          type: ["string", "null"]
+        matchScore:
+          type: ["integer", "null"]
+        appliedAt:
+          type: ["string", "null"]
+
+    ApplicationUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [applied, interviewing, rejected, offer, ghosted]
+        notes:
+          type: ["string", "null"]
+        tailoredResume:
+          type: ["string", "null"]
+        coverLetter:
+          type: ["string", "null"]
+        matchScore:
+          type: ["integer", "null"]
+
+    BatchApplicationInput:
+      type: object
+      required: [jobs]
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ApplicationInput"
+        dryRun:
+          type: boolean
+
+    BatchApplicationResult:
+      type: object
+      required: [created, dryRun]
+      properties:
+        created:
+          type: integer
+        dryRun:
+          type: boolean
+        applications:
+          type: array
+          items:
+            $ref: "#/components/schemas/Application"
+
+    # --- AI ---
+    TailorInput:
+      type: object
+      required: [jobTitle, company, jobDescription]
+      properties:
+        jobTitle:
+          type: string
+        company:
+          type: string
+        jobDescription:
+          type: string
+        resumeText:
+          type: ["string", "null"]
+
+    TailorResult:
+      type: object
+      required: [tailoredResume, coverLetter, matchScore, keywords]
+      properties:
+        tailoredResume:
+          type: string
+        coverLetter:
+          type: string
+        matchScore:
+          type: integer
+        keywords:
+          type: array
+          items:
+            type: string
+
+    MatchScoreInput:
+      type: object
+      required: [resumeText, jobDescription]
+      properties:
+        resumeText:
+          type: string
+        jobDescription:
+          type: string
+
+    MatchScoreResult:
+      type: object
+      required: [score, matchedKeywords, missingKeywords]
+      properties:
+        score:
+          type: integer
+        matchedKeywords:
+          type: array
+          items:
+            type: string
+        missingKeywords:
+          type: array
+          items:
+            type: string
+
+    # --- Stats ---
+    DashboardStats:
+      type: object
+      required: [totalApplications, appliedToday, dailyGoal, streakDays, responseRate, statusBreakdown, weeklyCount]
+      properties:
+        totalApplications:
+          type: integer
+        appliedToday:
+          type: integer
+        dailyGoal:
+          type: integer
+        streakDays:
+          type: integer
+        responseRate:
+          type: number
+        weeklyCount:
+          type: integer
+        statusBreakdown:
+          type: object
+          properties:
+            applied:
+              type: integer
+            interviewing:
+              type: integer
+            rejected:
+              type: integer
+            offer:
+              type: integer
+            ghosted:
+              type: integer
+          required: [applied, interviewing, rejected, offer, ghosted]
+
+    DailyStatEntry:
+      type: object
+      required: [date, count]
+      properties:
+        date:
+          type: string
+        count:
+          type: integer

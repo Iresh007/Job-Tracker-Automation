@@ -1,0 +1,87 @@
+Build a full-stack Job Application Tracker & Automation app called "ApplyBlitz" that helps users send 50+ job applications per day. Here are the full requirements:
+
+---
+
+## TECH STACK
+- Frontend: React + Tailwind CSS
+- Backend: Node.js + Express
+- Database: SQLite (via better-sqlite3)
+- AI: OpenAI API (GPT-4o) for resume/cover letter tailoring
+- Job Sources: Indeed, LinkedIn, Glassdoor (via web scraping with Puppeteer or via RapidAPI job search APIs)
+
+---
+
+## CORE FEATURES
+
+### 1. User Profile Setup
+- Upload base resume (PDF or text)
+- Input: name, target roles, target locations, years of experience, skills, salary expectation
+- Input: email credentials (for auto-apply via email where applicable)
+
+### 2. Job Discovery
+- Search jobs from at least 2 sources (e.g., Indeed + LinkedIn via RapidAPI or SerpAPI)
+- Filter by: role title, location (remote/hybrid/onsite), salary range, date posted
+- Deduplicate listings across sources
+- Show job cards with: company, role, salary, location, match score
+
+### 3. AI Resume & Cover Letter Tailoring
+- For each job, use OpenAI GPT-4o to:
+  - Tailor the user's resume bullet points to match the job description
+  - Generate a personalized cover letter (3 paragraphs, professional tone)
+  - Give a keyword match score (ATS optimization)
+- Show a diff/preview before applying
+
+### 4. Application Queue & Automation
+- "Quick Apply" button on each job card
+- Batch mode: select multiple jobs → click "Apply to All Selected"
+- Daily goal tracker: shows X/50 applications sent today with a progress bar
+- Application methods:
+  - Direct URL apply (open in iframe or new tab)
+  - Email apply (auto-compose and send via Nodemailer using user's Gmail SMTP)
+  - Easy Apply detection for LinkedIn jobs
+
+### 5. Application Dashboard
+- Table of all applications with columns: Company | Role | Status | Date Applied | Notes
+- Status options: Applied, Interviewing, Rejected, Offer, Ghosted
+- Update status via dropdown
+- Export to CSV
+
+### 6. Daily Stats & Streak
+- Applications sent today vs. goal (50/day)
+- 7-day streak tracker
+- Total applications all-time
+- Response rate %
+
+---
+
+## UI DESIGN
+- Dark theme, professional and clean
+- Sidebar navigation: Dashboard | Find Jobs | My Applications | Profile | Settings
+- Kanban-style board view option for application pipeline
+- Mobile responsive
+
+---
+
+## API KEYS NEEDED (use .env)
+- OPENAI_API_KEY
+- RAPIDAPI_KEY (for job search API)
+- GMAIL_USER and GMAIL_APP_PASSWORD (for email sending)
+
+---
+
+## FOLDER STRUCTURE
+/client → React frontend
+/server → Express backend
+/server/db → SQLite database setup
+/server/routes → jobs.js, applications.js, profile.js, ai.js
+.env → API keys
+README.md → Setup instructions
+
+---
+
+## IMPORTANT
+- Use environment variables for all API keys — never hardcode them
+- Add a README with clear setup steps
+- The app should be runnable with: npm install && npm run dev
+- Handle API rate limits gracefully with retry logic and delays
+- Add a "Dry Run" mode that previews applications without actually sending them
