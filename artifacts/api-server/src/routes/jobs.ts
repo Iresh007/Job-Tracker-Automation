@@ -59,7 +59,7 @@ router.get("/jobs/search", async (req, res): Promise<void> => {
       description: String(j.job_description || "").slice(0, 2000),
       salary:
         j.job_min_salary && j.job_max_salary
-          ? `$${j.job_min_salary}k - $${j.job_max_salary}k`
+          ? `₹${Math.round(Number(j.job_min_salary) / 100000)}L - ₹${Math.round(Number(j.job_max_salary) / 100000)}L`
           : null,
       matchScore: Math.floor(Math.random() * 40) + 60,
       isRemote: Boolean(j.job_is_remote),
@@ -128,28 +128,33 @@ router.delete("/jobs/saved/:id", async (req, res): Promise<void> => {
 
 function generateMockJobs(query: string, location?: string | null) {
   const companies = [
-    "Stripe", "Vercel", "Linear", "Notion", "Figma", "Anthropic", "OpenAI",
-    "GitHub", "Cloudflare", "Supabase", "PlanetScale", "Render", "Railway",
-    "Tailwind Labs", "Prisma", "Resend", "Fly.io", "Turbo", "Expo", "Loom",
+    "Razorpay", "Swiggy", "CRED", "Meesho", "Zepto", "PhonePe", "Groww",
+    "Flipkart", "Zomato", "Ola", "Paytm", "Nykaa", "Infosys", "TCS",
+    "Wipro", "HCL Technologies", "Freshworks", "Zoho", "InMobi", "Byju's",
   ];
   const roles = query ? [query, `Senior ${query}`, `Lead ${query}`, `Staff ${query}`] : [
-    "Software Engineer", "Senior Engineer", "Full Stack Developer", "Backend Engineer",
+    "Software Engineer", "Senior Software Engineer", "Full Stack Developer", "Backend Engineer",
   ];
   const locations = location
     ? [location, "Remote", `${location} (Hybrid)`]
-    : ["Remote", "San Francisco, CA", "New York, NY", "Austin, TX", "Seattle, WA"];
+    : ["Bengaluru, KA", "Mumbai, MH", "Delhi NCR", "Hyderabad, TS", "Pune, MH", "Chennai, TN", "Gurgaon, HR", "Remote"];
+
+  const salaries = [
+    null, "₹12L - ₹18L", "₹15L - ₹22L", "₹18L - ₹28L", "₹20L - ₹30L",
+    "₹25L - ₹40L", "₹30L - ₹50L", "₹10L - ₹14L", "₹8L - ₹12L",
+  ];
 
   return Array.from({ length: 20 }, (_, i) => ({
     externalId: `mock-${i}-${Date.now()}`,
     title: roles[i % roles.length],
     company: companies[i % companies.length],
     location: locations[i % locations.length],
-    source: i % 2 === 0 ? "LinkedIn" : "Indeed",
+    source: i % 3 === 0 ? "LinkedIn" : i % 3 === 1 ? "Naukri" : "Indeed",
     applyUrl: `https://jobs.example.com/apply/${i}`,
-    description: `We are looking for a ${roles[i % roles.length]} to join our team. You will work on cutting-edge products used by millions of developers worldwide. Requirements: 3+ years of experience, strong problem-solving skills, passion for great software.\n\nResponsibilities:\n- Design and implement scalable systems\n- Collaborate with cross-functional teams\n- Write clean, well-tested code\n- Mentor junior engineers`,
-    salary: i % 3 === 0 ? null : `$${120 + i * 5}k - $${160 + i * 5}k`,
+    description: `We are looking for a ${roles[i % roles.length]} to join our team. You will build products used by crores of customers across India. Requirements: 2+ years of experience, strong problem-solving skills, passion for great software.\n\nResponsibilities:\n- Design and implement scalable systems\n- Collaborate with cross-functional teams\n- Write clean, well-tested code\n- Mentor junior engineers`,
+    salary: salaries[i % salaries.length],
     matchScore: Math.floor(Math.random() * 35) + 65,
-    isRemote: i % 3 === 0,
+    isRemote: i % 4 === 0,
     postedAt: new Date(Date.now() - i * 86400000 * Math.random()).toISOString(),
   }));
 }

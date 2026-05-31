@@ -133,7 +133,7 @@ export default function Profile() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Target Locations (comma-separated)</Label>
-            <Input value={form.targetLocations} onChange={set("targetLocations")} placeholder="Remote, San Francisco CA, New York NY" className="bg-background border-input" />
+            <Input value={form.targetLocations} onChange={set("targetLocations")} placeholder="Bengaluru, Mumbai, Delhi NCR, Hyderabad, Remote" className="bg-background border-input" />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Skills (comma-separated)</Label>
@@ -150,12 +150,12 @@ export default function Profile() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Salary Min ($/year)</Label>
-              <Input type="number" value={form.salaryMin} onChange={set("salaryMin")} placeholder="120000" className="bg-background border-input" />
+              <Label className="text-xs text-muted-foreground">Salary Min (₹/year)</Label>
+              <Input type="number" value={form.salaryMin} onChange={set("salaryMin")} placeholder="1200000" className="bg-background border-input" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Salary Max ($/year)</Label>
-              <Input type="number" value={form.salaryMax} onChange={set("salaryMax")} placeholder="180000" className="bg-background border-input" />
+              <Label className="text-xs text-muted-foreground">Salary Max (₹/year)</Label>
+              <Input type="number" value={form.salaryMax} onChange={set("salaryMax")} placeholder="2500000" className="bg-background border-input" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">

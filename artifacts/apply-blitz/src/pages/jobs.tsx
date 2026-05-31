@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchJobs, useSaveJob, useCreateApplication, useGetSavedJobs, getGetSavedJobsQueryKey } from "@workspace/api-client-react";
-import { Search, MapPin, Briefcase, DollarSign, Calendar, ExternalLink, BookmarkPlus, CheckSquare, Square, Send, Loader2 } from "lucide-react";
+import { Search, MapPin, Briefcase, IndianRupee, Calendar, ExternalLink, BookmarkPlus, CheckSquare, Square, Send, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -141,7 +141,7 @@ export default function Jobs() {
               <div className="relative w-48">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
                 <Input
-                  placeholder="Location..."
+                  placeholder="e.g. Bengaluru, Mumbai..."
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   className="pl-9 bg-background border-input"
@@ -276,7 +276,7 @@ export default function Jobs() {
 
                     <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{job.location}</span>
-                      {job.salary && <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" />{job.salary}</span>}
+                      {job.salary && <span className="flex items-center gap-1"><IndianRupee className="h-3 w-3" />{job.salary}</span>}
                       {job.isRemote && <Badge variant="outline" className="text-xs border-primary/40 text-primary/80 bg-primary/10">Remote</Badge>}
                       <span className="ml-auto">{job.source}</span>
                     </div>
