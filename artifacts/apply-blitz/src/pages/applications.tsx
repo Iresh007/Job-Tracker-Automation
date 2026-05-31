@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useGetApplications, useUpdateApplication, useDeleteApplication, getGetApplicationsQueryKey, getGetDashboardStatsQueryKey } from "@workspace/api-client-react";
-import { Briefcase, Search, Download, LayoutGrid, List, Trash2, ExternalLink } from "lucide-react";
+import { Briefcase, Search, Download, LayoutGrid, List, Trash2, ExternalLink, Pencil } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,49 @@ function exportCSV(data: ReturnType<typeof useGetApplications>["data"]) {
   URL.revokeObjectURL(url);
 }
 
+function InlineNotesEditor({ id, notes, onSave }: { id: number; notes: string | null | undefined; onSave: (id: number, notes: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(notes ?? "");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (editing) textareaRef.current?.focus();
+  }, [editing]);
+
+  const commit = () => {
+    setEditing(false);
+    if (value !== (notes ?? "")) onSave(id, value);
+  };
+
+  if (editing) {
+    return (
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === "Escape") { setValue(notes ?? ""); setEditing(false); } if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commit(); } }}
+        rows={2}
+        className="w-full text-xs bg-muted/40 border border-primary/40 rounded px-2 py-1 text-foreground placeholder:text-muted-foreground resize-none outline-none focus:ring-1 focus:ring-primary/60"
+        placeholder="Add notes..."
+      />
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setEditing(true)}
+      className="group flex items-start gap-1.5 text-left w-full min-w-[140px] max-w-[220px]"
+      title="Click to edit notes"
+    >
+      <span className={`text-xs flex-1 leading-relaxed line-clamp-2 ${value ? "text-muted-foreground" : "text-muted-foreground/40 italic"}`}>
+        {value || "Add notes…"}
+      </span>
+      <Pencil className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground/30 group-hover:text-primary/60 transition-colors" />
+    </button>
+  );
+}
+
 export default function Applications() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [search, setSearch] = useState("");
@@ -61,6 +104,11 @@ export default function Applications() {
     await updateApp.mutateAsync({ id, data: { status } });
     queryClient.invalidateQueries({ queryKey: getGetApplicationsQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetDashboardStatsQueryKey() });
+  };
+
+  const handleNotesChange = async (id: number, notes: string) => {
+    await updateApp.mutateAsync({ id, data: { notes: notes || null } });
+    queryClient.invalidateQueries({ queryKey: getGetApplicationsQueryKey() });
   };
 
   const handleDelete = async (id: number) => {
@@ -175,8 +223,8 @@ export default function Applications() {
                     <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                       {format(new Date(app.appliedAt), "MMM d, yyyy")}
                     </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground max-w-[200px] truncate">
-                      {app.notes ?? "—"}
+                    <td className="px-4 py-3">
+                      <InlineNotesEditor id={app.id} notes={app.notes} onSave={handleNotesChange} />
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -223,6 +271,7 @@ export default function Applications() {
                             {app.matchScore}% match
                           </span>
                         )}
+                        <InlineNotesEditor id={app.id} notes={app.notes} onSave={handleNotesChange} />
                       </CardContent>
                     </Card>
                   ))}
