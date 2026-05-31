@@ -11,6 +11,7 @@ import {
   Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NotificationBanner } from "@/components/notification-banner";
 
 interface LayoutProps {
   children: ReactNode;
@@ -69,8 +70,9 @@ export function Layout({ children }: LayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        {children}
+      <main className="flex-1 overflow-y-auto flex flex-col">
+        <NotificationBanner />
+        <div className="flex-1">{children}</div>
       </main>
     </div>
   );

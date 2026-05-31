@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Settings2, Key, Shield, Info } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Settings2, Key, Shield, Info, Bell, BellOff } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { requestNotificationPermission } from "@/hooks/useInterviewNotifications";
 
 const API_INDICATORS = [
   {
@@ -25,6 +26,12 @@ export default function Settings() {
   const [dailyGoal, setDailyGoal] = useState("50");
   const [dryRun, setDryRun] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | null>(null);
+  const [enablingNotif, setEnablingNotif] = useState(false);
+
+  useEffect(() => {
+    if (typeof Notification !== "undefined") setNotifPermission(Notification.permission);
+  }, []);
 
   const handleSave = () => {
     localStorage.setItem("applyblitz_daily_goal", dailyGoal);
@@ -91,6 +98,60 @@ export default function Settings() {
           >
             {saved ? "Saved" : "Save Settings"}
           </button>
+        </CardContent>
+      </Card>
+
+      {/* Notifications */}
+      <Card className="bg-card border-border">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Bell className="h-4 w-4 text-primary" /> Interview Reminders
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Get browser notifications 1 hour and 15 minutes before each scheduled interview. Works even when ApplyBlitz is in a background tab.
+          </p>
+          {notifPermission === "granted" && (
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+              <Bell className="h-4 w-4 text-emerald-400 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-emerald-400">Reminders enabled</p>
+                <p className="text-xs text-emerald-400/70">You'll be notified at 60 min and 15 min before each interview.</p>
+              </div>
+              <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/30">Active</Badge>
+            </div>
+          )}
+          {notifPermission === "denied" && (
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-md bg-muted/30 border border-border">
+              <BellOff className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">Notifications blocked</p>
+                <p className="text-xs text-muted-foreground">Your browser is blocking notifications. Click the lock icon in the address bar to allow them.</p>
+              </div>
+            </div>
+          )}
+          {notifPermission === "default" && (
+            <button
+              onClick={async () => {
+                setEnablingNotif(true);
+                const result = await requestNotificationPermission();
+                setNotifPermission(result);
+                setEnablingNotif(false);
+                if (result === "granted") {
+                  new Notification("ApplyBlitz reminders enabled!", {
+                    body: "You'll get notified 1 hour and 15 minutes before each interview.",
+                    icon: "/favicon.ico",
+                  });
+                }
+              }}
+              disabled={enablingNotif}
+              className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              <Bell className="h-4 w-4" />
+              {enablingNotif ? "Enabling…" : "Enable Interview Reminders"}
+            </button>
+          )}
         </CardContent>
       </Card>
 

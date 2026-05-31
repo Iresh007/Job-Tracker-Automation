@@ -10,6 +10,8 @@ import Applications from "@/pages/applications";
 import AiTailor from "@/pages/ai-tailor";
 import Profile from "@/pages/profile";
 import Settings from "@/pages/settings";
+import { useGetApplications } from "@workspace/api-client-react";
+import { useInterviewNotifications } from "@/hooks/useInterviewNotifications";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,6 +21,15 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+function InterviewWatcher() {
+  const { data: applications } = useGetApplications(
+    { status: "interviewing" },
+    { query: { refetchInterval: 60_000 } }
+  );
+  useInterviewNotifications(applications);
+  return null;
+}
 
 function Router() {
   return (
@@ -41,6 +52,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL?.replace(/\/$/, "") || ""}>
+          <InterviewWatcher />
           <Router />
         </WouterRouter>
         <Toaster />
