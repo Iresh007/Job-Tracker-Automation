@@ -27,7 +27,7 @@ function MatchBadge({ score }: { score: number | null | undefined }) {
 
 export default function Jobs() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [location, setLocation] = useState("");
+  const [location, setLocation] = useState("India");
   const [datePosted, setDatePosted] = useState<string>("");
   const [remote, setRemote] = useState(false);
   const [searchParams, setSearchParams] = useState<SearchJobsParams | null>(null);
