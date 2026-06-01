@@ -20,6 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AnalyzeResumeInput,
+  AnalyzeResumeResult,
   Application,
   ApplicationInput,
   ApplicationUpdate,
@@ -1166,6 +1168,77 @@ export const useGetMatchScore = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getGetMatchScoreMutationOptions(options));
+    }
+
+export const getAnalyzeResumeUrl = () => {
+
+
+
+
+  return `/api/ai/analyze-resume`
+}
+
+/**
+ * @summary Deep ATS analysis of a resume with section scores, keyword gaps, strengths and improvements
+ */
+export const analyzeResume = async (analyzeResumeInput: AnalyzeResumeInput, options?: RequestInit): Promise<AnalyzeResumeResult> => {
+
+  return customFetch<AnalyzeResumeResult>(getAnalyzeResumeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      analyzeResumeInput,)
+  }
+);}
+
+
+
+
+export const getAnalyzeResumeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof analyzeResume>>, TError,{data: BodyType<AnalyzeResumeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof analyzeResume>>, TError,{data: BodyType<AnalyzeResumeInput>}, TContext> => {
+
+const mutationKey = ['analyzeResume'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof analyzeResume>>, {data: BodyType<AnalyzeResumeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  analyzeResume(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AnalyzeResumeMutationResult = NonNullable<Awaited<ReturnType<typeof analyzeResume>>>
+    export type AnalyzeResumeMutationBody = BodyType<AnalyzeResumeInput>
+    export type AnalyzeResumeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Deep ATS analysis of a resume with section scores, keyword gaps, strengths and improvements
+ */
+export const useAnalyzeResume = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof analyzeResume>>, TError,{data: BodyType<AnalyzeResumeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof analyzeResume>>,
+        TError,
+        {data: BodyType<AnalyzeResumeInput>},
+        TContext
+      > => {
+      return useMutation(getAnalyzeResumeMutationOptions(options));
     }
 
 export const getGetDashboardStatsUrl = () => {

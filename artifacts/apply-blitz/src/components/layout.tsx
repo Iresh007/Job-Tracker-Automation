@@ -8,7 +8,8 @@ import {
   UserCircle, 
   Settings,
   LogOut,
-  Zap
+  Zap,
+  ScanText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationBanner } from "@/components/notification-banner";
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/jobs", label: "Find Jobs", icon: Search },
   { href: "/applications", label: "My Applications", icon: Briefcase },
   { href: "/ai", label: "AI Tailor", icon: Wand2 },
+  { href: "/resume-analyzer", label: "Resume Analyzer", icon: ScanText },
   { href: "/profile", label: "Profile", icon: UserCircle },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

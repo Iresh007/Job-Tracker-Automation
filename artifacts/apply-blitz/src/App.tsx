@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Jobs from "@/pages/jobs";
 import Applications from "@/pages/applications";
 import AiTailor from "@/pages/ai-tailor";
+import ResumeAnalyzer from "@/pages/resume-analyzer";
 import Profile from "@/pages/profile";
 import Settings from "@/pages/settings";
 import { useGetApplications } from "@workspace/api-client-react";
@@ -39,6 +40,7 @@ function Router() {
         <Route path="/jobs" component={Jobs} />
         <Route path="/applications" component={Applications} />
         <Route path="/ai" component={AiTailor} />
+        <Route path="/resume-analyzer" component={ResumeAnalyzer} />
         <Route path="/profile" component={Profile} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />

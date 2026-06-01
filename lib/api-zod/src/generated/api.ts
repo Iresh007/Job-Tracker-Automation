@@ -320,6 +320,33 @@ export const GetMatchScoreResponse = zod.object({
 
 
 /**
+ * @summary Deep ATS analysis of a resume with section scores, keyword gaps, strengths and improvements
+ */
+export const AnalyzeResumeBody = zod.object({
+  "resumeText": zod.string(),
+  "jobDescription": zod.string().nullish(),
+  "targetRole": zod.string().nullish()
+})
+
+export const AnalyzeResumeResponse = zod.object({
+  "atsScore": zod.number(),
+  "sections": zod.array(zod.object({
+  "name": zod.string(),
+  "score": zod.number(),
+  "feedback": zod.string(),
+  "suggestions": zod.array(zod.string())
+})),
+  "keywords": zod.object({
+  "found": zod.array(zod.string()),
+  "missing": zod.array(zod.string())
+}),
+  "strengths": zod.array(zod.string()),
+  "improvements": zod.array(zod.string()),
+  "summary": zod.string().optional()
+})
+
+
+/**
  * @summary Get dashboard summary stats
  */
 export const GetDashboardStatsResponse = zod.object({

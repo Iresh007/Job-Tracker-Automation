@@ -323,6 +323,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/MatchScoreResult"
 
+  /ai/analyze-resume:
+    post:
+      operationId: analyzeResume
+      tags: [ai]
+      summary: Deep ATS analysis of a resume with section scores, keyword gaps, strengths and improvements
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeResumeInput"
+      responses:
+        "200":
+          description: Resume analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyzeResumeResult"
+
   # === STATS ===
   /stats/dashboard:
     get:
@@ -669,6 +688,65 @@ components:
           type: array
           items:
             type: string
+
+    AnalyzeResumeInput:
+      type: object
+      required: [resumeText]
+      properties:
+        resumeText:
+          type: string
+        jobDescription:
+          type: ["string", "null"]
+        targetRole:
+          type: ["string", "null"]
+
+    ResumeSection:
+      type: object
+      required: [name, score, feedback, suggestions]
+      properties:
+        name:
+          type: string
+        score:
+          type: integer
+        feedback:
+          type: string
+        suggestions:
+          type: array
+          items:
+            type: string
+
+    AnalyzeResumeResult:
+      type: object
+      required: [atsScore, sections, keywords, strengths, improvements]
+      properties:
+        atsScore:
+          type: integer
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResumeSection"
+        keywords:
+          type: object
+          required: [found, missing]
+          properties:
+            found:
+              type: array
+              items:
+                type: string
+            missing:
+              type: array
+              items:
+                type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        improvements:
+          type: array
+          items:
+            type: string
+        summary:
+          type: string
 
     # --- Stats ---
     DashboardStats:

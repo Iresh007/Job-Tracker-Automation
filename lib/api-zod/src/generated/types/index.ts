@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './analyzeResumeInput';
+export * from './analyzeResumeResult';
+export * from './analyzeResumeResultKeywords';
 export * from './application';
 export * from './applicationInput';
 export * from './applicationInputStatus';
@@ -25,6 +28,7 @@ export * from './matchScoreInput';
 export * from './matchScoreResult';
 export * from './profile';
 export * from './profileInput';
+export * from './resumeSection';
 export * from './savedJob';
 export * from './savedJobInput';
 export * from './searchJobsDatePosted';

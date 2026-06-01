@@ -234,6 +234,35 @@ export interface MatchScoreResult {
   missingKeywords: string[];
 }
 
+export interface AnalyzeResumeInput {
+  resumeText: string;
+  /** @nullable */
+  jobDescription?: string | null;
+  /** @nullable */
+  targetRole?: string | null;
+}
+
+export interface ResumeSection {
+  name: string;
+  score: number;
+  feedback: string;
+  suggestions: string[];
+}
+
+export type AnalyzeResumeResultKeywords = {
+  found: string[];
+  missing: string[];
+};
+
+export interface AnalyzeResumeResult {
+  atsScore: number;
+  sections: ResumeSection[];
+  keywords: AnalyzeResumeResultKeywords;
+  strengths: string[];
+  improvements: string[];
+  summary?: string;
+}
+
 export type DashboardStatsStatusBreakdown = {
   applied: number;
   interviewing: number;
