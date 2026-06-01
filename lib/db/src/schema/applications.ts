@@ -9,6 +9,7 @@ export const applicationsTable = pgTable("applications", {
   status: text("status").notNull().default("applied"),
   applyUrl: text("apply_url"),
   notes: text("notes"),
+  jobDescription: text("job_description"),
   tailoredResume: text("tailored_resume"),
   coverLetter: text("cover_letter"),
   matchScore: integer("match_score"),

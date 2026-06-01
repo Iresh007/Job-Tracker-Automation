@@ -89,6 +89,7 @@ export default function Jobs() {
         role: job.title,
         applyUrl: job.applyUrl,
         matchScore: job.matchScore ?? null,
+        jobDescription: job.description ?? null,
         status: "applied",
       }
     });
@@ -108,6 +109,7 @@ export default function Jobs() {
           role: job.title,
           applyUrl: job.applyUrl,
           matchScore: job.matchScore ?? null,
+          jobDescription: job.description ?? null,
           status: "applied",
         }
       });

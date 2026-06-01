@@ -117,6 +117,8 @@ export interface Application {
   /** @nullable */
   notes?: string | null;
   /** @nullable */
+  jobDescription?: string | null;
+  /** @nullable */
   tailoredResume?: string | null;
   /** @nullable */
   coverLetter?: string | null;
@@ -149,6 +151,8 @@ export interface ApplicationInput {
   /** @nullable */
   notes?: string | null;
   /** @nullable */
+  jobDescription?: string | null;
+  /** @nullable */
   tailoredResume?: string | null;
   /** @nullable */
   coverLetter?: string | null;
@@ -175,6 +179,8 @@ export interface ApplicationUpdate {
   status?: ApplicationUpdateStatus;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  jobDescription?: string | null;
   /** @nullable */
   tailoredResume?: string | null;
   /** @nullable */

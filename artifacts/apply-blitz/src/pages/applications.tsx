@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { useGetApplications, useUpdateApplication, useDeleteApplication, getGetApplicationsQueryKey, getGetDashboardStatsQueryKey } from "@workspace/api-client-react";
-import { Briefcase, Search, Download, LayoutGrid, List, Trash2, ExternalLink, Pencil, CalendarClock, FileText, Mail, Copy, Check, ChevronRight, Wand2 } from "lucide-react";
+import { useGetApplications, useUpdateApplication, useDeleteApplication, useTailorResume, useGetProfile, getGetApplicationsQueryKey, getGetDashboardStatsQueryKey } from "@workspace/api-client-react";
+import { Briefcase, Search, Download, LayoutGrid, List, Trash2, ExternalLink, Pencil, CalendarClock, FileText, Mail, Copy, Check, ChevronRight, Wand2, Square, CheckSquare, Loader2, AlertCircle, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -17,11 +17,11 @@ type Status = typeof STATUSES[number];
 type Application = NonNullable<ReturnType<typeof useGetApplications>["data"]>[number];
 
 const STATUS_CONFIG: Record<Status, { label: string; color: string; bg: string }> = {
-  applied:      { label: "Applied",      color: "text-blue-400",   bg: "bg-blue-500/10 border-blue-500/30"   },
-  interviewing: { label: "Interviewing", color: "text-amber-400",  bg: "bg-amber-500/10 border-amber-500/30" },
-  offer:        { label: "Offer",        color: "text-emerald-400",bg: "bg-emerald-500/10 border-emerald-500/30" },
-  rejected:     { label: "Rejected",     color: "text-red-400",    bg: "bg-red-500/10 border-red-500/30"     },
-  ghosted:      { label: "Ghosted",      color: "text-zinc-400",   bg: "bg-zinc-500/10 border-zinc-500/30"   },
+  applied:      { label: "Applied",      color: "text-blue-400",    bg: "bg-blue-500/10 border-blue-500/30"    },
+  interviewing: { label: "Interviewing", color: "text-amber-400",   bg: "bg-amber-500/10 border-amber-500/30"  },
+  offer:        { label: "Offer",        color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/30" },
+  rejected:     { label: "Rejected",     color: "text-red-400",     bg: "bg-red-500/10 border-red-500/30"      },
+  ghosted:      { label: "Ghosted",      color: "text-zinc-400",    bg: "bg-zinc-500/10 border-zinc-500/30"    },
 };
 
 function exportCSV(data: ReturnType<typeof useGetApplications>["data"]) {
@@ -111,11 +111,7 @@ function ApplicationDetailPanel({ app, open, onClose, onStatusChange, onNotesCha
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-xl lg:max-w-2xl flex flex-col p-0 bg-card border-border overflow-hidden"
-      >
-        {/* Header */}
+      <SheetContent side="right" className="w-full sm:max-w-xl lg:max-w-2xl flex flex-col p-0 bg-card border-border overflow-hidden">
         <div className="px-6 pt-6 pb-4 border-b border-border bg-card">
           <SheetHeader>
             <div className="flex items-start justify-between gap-4 pr-6">
@@ -133,8 +129,6 @@ function ApplicationDetailPanel({ app, open, onClose, onStatusChange, onNotesCha
               </div>
             </div>
           </SheetHeader>
-
-          {/* Meta row */}
           <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-4 text-xs text-muted-foreground">
             <span>Applied {format(new Date(app.appliedAt), "MMM d, yyyy")}</span>
             {app.interviewAt && (
@@ -149,8 +143,6 @@ function ApplicationDetailPanel({ app, open, onClose, onStatusChange, onNotesCha
               </a>
             )}
           </div>
-
-          {/* Status change */}
           <div className="mt-3">
             <Select value={app.status} onValueChange={(v) => onStatusChange(app.id, v as Status)}>
               <SelectTrigger className={`h-7 text-xs w-36 border ${cfg.bg} ${cfg.color}`}>
@@ -165,10 +157,7 @@ function ApplicationDetailPanel({ app, open, onClose, onStatusChange, onNotesCha
           </div>
         </div>
 
-        {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-
-          {/* Notes */}
           <section>
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Notes</h3>
             <div className="bg-background/60 rounded-lg border border-border p-3">
@@ -176,7 +165,6 @@ function ApplicationDetailPanel({ app, open, onClose, onStatusChange, onNotesCha
             </div>
           </section>
 
-          {/* Tailored Resume */}
           <section>
             <div className="flex items-center justify-between mb-2">
               <h3 className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -201,7 +189,6 @@ function ApplicationDetailPanel({ app, open, onClose, onStatusChange, onNotesCha
             )}
           </section>
 
-          {/* Cover Letter */}
           <section>
             <div className="flex items-center justify-between mb-2">
               <h3 className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -231,13 +218,24 @@ function ApplicationDetailPanel({ app, open, onClose, onStatusChange, onNotesCha
   );
 }
 
+type RetailorProgress = {
+  total: number;
+  done: number;
+  failed: number;
+  currentLabel: string;
+  finished: boolean;
+};
+
 export default function Applications() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"table" | "kanban">("table");
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [retailorProgress, setRetailorProgress] = useState<RetailorProgress | null>(null);
 
   const queryClient = useQueryClient();
+  const { data: profile } = useGetProfile();
 
   const { data: applications, isLoading } = useGetApplications(
     { status: (statusFilter as Status) || undefined, search: search || undefined },
@@ -246,6 +244,7 @@ export default function Applications() {
 
   const updateApp = useUpdateApplication();
   const deleteApp = useDeleteApplication();
+  const tailorMutation = useTailorResume();
 
   const handleStatusChange = async (id: number, status: Status) => {
     await updateApp.mutateAsync({ id, data: { status } });
@@ -267,12 +266,75 @@ export default function Applications() {
 
   const handleDelete = async (id: number) => {
     if (selectedApp?.id === id) setSelectedApp(null);
+    setSelectedIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
     await deleteApp.mutateAsync({ id });
     queryClient.invalidateQueries({ queryKey: getGetApplicationsQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetDashboardStatsQueryKey() });
   };
 
-  const openPanel = (app: Application) => setSelectedApp(app);
+  const toggleSelect = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedIds((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (!applications) return;
+    if (selectedIds.size === applications.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(applications.map((a) => a.id)));
+    }
+  };
+
+  const handleBulkRetailor = async () => {
+    if (!applications) return;
+    const toRetailor = applications.filter(
+      (a) => selectedIds.has(a.id) && a.jobDescription
+    );
+    if (toRetailor.length === 0) return;
+
+    setRetailorProgress({ total: toRetailor.length, done: 0, failed: 0, currentLabel: "", finished: false });
+
+    let done = 0;
+    let failed = 0;
+
+    for (const app of toRetailor) {
+      setRetailorProgress((p) => p ? { ...p, currentLabel: `${app.company} — ${app.role}` } : p);
+      try {
+        const result = await tailorMutation.mutateAsync({
+          data: {
+            jobTitle: app.role,
+            company: app.company,
+            jobDescription: app.jobDescription!,
+            resumeText: profile?.resumeText ?? null,
+          }
+        });
+        await updateApp.mutateAsync({
+          id: app.id,
+          data: {
+            tailoredResume: result.tailoredResume,
+            coverLetter: result.coverLetter,
+            matchScore: result.matchScore,
+          }
+        });
+        done++;
+      } catch {
+        failed++;
+      }
+      setRetailorProgress((p) => p ? { ...p, done: done, failed: failed } : p);
+    }
+
+    queryClient.invalidateQueries({ queryKey: getGetApplicationsQueryKey() });
+    setRetailorProgress((p) => p ? { ...p, finished: true } : p);
+    setSelectedIds(new Set());
+  };
+
+  const selectedWithJD = applications ? applications.filter((a) => selectedIds.has(a.id) && a.jobDescription).length : 0;
+  const selectedWithoutJD = selectedIds.size - selectedWithJD;
 
   return (
     <div className="p-6 space-y-6 max-w-7xl">
@@ -329,6 +391,64 @@ export default function Applications() {
         </Select>
       </div>
 
+      {/* Re-tailor progress banner */}
+      {retailorProgress && (
+        <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border text-sm ${
+          retailorProgress.finished
+            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+            : "bg-primary/10 border-primary/30 text-primary"
+        }`}>
+          {retailorProgress.finished ? (
+            <>
+              <Check className="h-4 w-4 shrink-0" />
+              <span className="font-medium">
+                Re-tailored {retailorProgress.done} application{retailorProgress.done !== 1 ? "s" : ""}
+                {retailorProgress.failed > 0 && ` · ${retailorProgress.failed} failed`}
+              </span>
+              <button onClick={() => setRetailorProgress(null)} className="ml-auto opacity-60 hover:opacity-100">
+                <X className="h-4 w-4" />
+              </button>
+            </>
+          ) : (
+            <>
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+              <span className="font-medium">
+                Re-tailoring {retailorProgress.done + 1}/{retailorProgress.total}:
+              </span>
+              <span className="text-foreground/70 truncate">{retailorProgress.currentLabel}</span>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Bulk selection toolbar */}
+      {selectedIds.size > 0 && !retailorProgress && (
+        <div className="sticky top-4 z-10 flex items-center gap-3 bg-secondary/90 backdrop-blur border border-border px-4 py-2.5 rounded-lg shadow-lg">
+          <span className="text-sm font-medium text-foreground">{selectedIds.size} selected</span>
+          {selectedWithJD > 0 && (
+            <button
+              onClick={handleBulkRetailor}
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-3.5 py-1.5 rounded text-xs font-semibold hover:bg-primary/90 transition-colors"
+            >
+              <Wand2 className="h-3.5 w-3.5" />
+              Re-tailor {selectedWithJD} with AI
+            </button>
+          )}
+          {selectedWithoutJD > 0 && (
+            <span className="flex items-center gap-1 text-xs text-amber-400">
+              <AlertCircle className="h-3.5 w-3.5" />
+              {selectedWithoutJD} have no job description saved
+            </span>
+          )}
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
@@ -345,92 +465,106 @@ export default function Applications() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
+                  <th className="px-4 py-3 w-10">
+                    <button onClick={toggleSelectAll} className="text-muted-foreground hover:text-foreground transition-colors">
+                      {applications.length > 0 && selectedIds.size === applications.length
+                        ? <CheckSquare className="h-4 w-4 text-primary" />
+                        : <Square className="h-4 w-4" />}
+                    </button>
+                  </th>
                   {["Company", "Role", "Status", "Match", "Applied", "Interview", "Notes", ""].map((h) => (
                     <th key={h} className="text-left text-xs font-medium text-muted-foreground px-4 py-3">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {applications.map((app) => (
-                  <tr
-                    key={app.id}
-                    onClick={() => openPanel(app)}
-                    className="border-b border-border/50 hover:bg-muted/20 transition-colors cursor-pointer group"
-                  >
-                    <td className="px-4 py-3 text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                      {app.company}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{app.role}</td>
-                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                      <Select value={app.status} onValueChange={(v) => handleStatusChange(app.id, v as Status)}>
-                        <SelectTrigger className={`h-7 text-xs w-32 border ${STATUS_CONFIG[app.status as Status]?.bg ?? ""} ${STATUS_CONFIG[app.status as Status]?.color ?? ""}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {STATUSES.map((s) => (
-                            <SelectItem key={s} value={s} className="text-xs">{STATUS_CONFIG[s].label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="px-4 py-3">
-                      {app.matchScore != null && (
-                        <span className={`text-xs font-semibold ${app.matchScore >= 80 ? "text-emerald-400" : app.matchScore >= 50 ? "text-amber-400" : "text-red-400"}`}>
-                          {app.matchScore}%
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                      {format(new Date(app.appliedAt), "MMM d, yyyy")}
-                    </td>
-                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-1.5 min-w-[160px]">
-                        <CalendarClock className={`h-3.5 w-3.5 shrink-0 ${app.status === "interviewing" ? "text-amber-400" : "text-muted-foreground/30"}`} />
-                        <input
-                          type="datetime-local"
-                          value={app.interviewAt ? format(new Date(app.interviewAt), "yyyy-MM-dd'T'HH:mm") : ""}
-                          onChange={(e) => handleInterviewChange(app.id, e.target.value || null)}
-                          className="text-xs bg-transparent border-0 text-muted-foreground focus:text-foreground focus:outline-none w-[140px] cursor-pointer disabled:opacity-30 disabled:cursor-default [color-scheme:dark]"
-                          disabled={app.status !== "interviewing"}
-                          title={app.status !== "interviewing" ? "Set status to Interviewing to schedule" : "Schedule interview"}
-                        />
-                      </div>
-                    </td>
-                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                      <InlineNotesEditor id={app.id} notes={app.notes} onSave={handleNotesChange} />
-                    </td>
-                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-2">
-                        {(app.tailoredResume || app.coverLetter) && (
-                          <button
-                            onClick={() => openPanel(app)}
-                            className="text-muted-foreground hover:text-primary transition-colors"
-                            title="View resume & cover letter"
-                          >
-                            <FileText className="h-3.5 w-3.5" />
+                {applications.map((app) => {
+                  const isSelected = selectedIds.has(app.id);
+                  return (
+                    <tr
+                      key={app.id}
+                      onClick={() => setSelectedApp(app)}
+                      className={`border-b border-border/50 hover:bg-muted/20 transition-colors cursor-pointer group ${isSelected ? "bg-primary/5" : ""}`}
+                    >
+                      <td className="px-4 py-3" onClick={(e) => toggleSelect(app.id, e)}>
+                        {isSelected
+                          ? <CheckSquare className="h-4 w-4 text-primary" />
+                          : <Square className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                        <div className="flex items-center gap-1.5">
+                          {app.company}
+                          {app.jobDescription && (
+                            <span title="Job description saved — can be re-tailored">
+                              <Wand2 className="h-3 w-3 text-primary/40" />
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">{app.role}</td>
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        <Select value={app.status} onValueChange={(v) => handleStatusChange(app.id, v as Status)}>
+                          <SelectTrigger className={`h-7 text-xs w-32 border ${STATUS_CONFIG[app.status as Status]?.bg ?? ""} ${STATUS_CONFIG[app.status as Status]?.color ?? ""}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {STATUSES.map((s) => (
+                              <SelectItem key={s} value={s} className="text-xs">{STATUS_CONFIG[s].label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td className="px-4 py-3">
+                        {app.matchScore != null && (
+                          <span className={`text-xs font-semibold ${app.matchScore >= 80 ? "text-emerald-400" : app.matchScore >= 50 ? "text-amber-400" : "text-red-400"}`}>
+                            {app.matchScore}%
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                        {format(new Date(app.appliedAt), "MMM d, yyyy")}
+                      </td>
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1.5 min-w-[160px]">
+                          <CalendarClock className={`h-3.5 w-3.5 shrink-0 ${app.status === "interviewing" ? "text-amber-400" : "text-muted-foreground/30"}`} />
+                          <input
+                            type="datetime-local"
+                            value={app.interviewAt ? format(new Date(app.interviewAt), "yyyy-MM-dd'T'HH:mm") : ""}
+                            onChange={(e) => handleInterviewChange(app.id, e.target.value || null)}
+                            className="text-xs bg-transparent border-0 text-muted-foreground focus:text-foreground focus:outline-none w-[140px] cursor-pointer disabled:opacity-30 disabled:cursor-default [color-scheme:dark]"
+                            disabled={app.status !== "interviewing"}
+                            title={app.status !== "interviewing" ? "Set status to Interviewing to schedule" : "Schedule interview"}
+                          />
+                        </div>
+                      </td>
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        <InlineNotesEditor id={app.id} notes={app.notes} onSave={handleNotesChange} />
+                      </td>
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-2">
+                          {(app.tailoredResume || app.coverLetter) && (
+                            <button onClick={() => setSelectedApp(app)} className="text-muted-foreground hover:text-primary transition-colors" title="View resume & cover letter">
+                              <FileText className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                          {app.applyUrl && (
+                            <a href={app.applyUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          )}
+                          <button onClick={() => handleDelete(app.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
-                        )}
-                        {app.applyUrl && (
-                          <a href={app.applyUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        )}
-                        <button
-                          onClick={() => handleDelete(app.id)}
-                          className="text-muted-foreground hover:text-destructive transition-colors"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </Card>
       ) : (
-        /* Kanban View */
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 overflow-x-auto">
           {STATUSES.map((status) => {
             const col = applications.filter((a) => a.status === status);
@@ -442,45 +576,56 @@ export default function Applications() {
                   <span className={`ml-auto text-xs font-bold ${cfg.color}`}>{col.length}</span>
                 </div>
                 <div className="space-y-2">
-                  {col.map((app) => (
-                    <Card
-                      key={app.id}
-                      onClick={() => openPanel(app)}
-                      className="bg-card border-border hover:border-primary/40 transition-colors cursor-pointer"
-                    >
-                      <CardContent className="p-3 space-y-1.5">
-                        <p className="text-xs font-semibold text-foreground leading-tight">{app.role}</p>
-                        <p className="text-xs text-muted-foreground">{app.company}</p>
-                        <p className="text-xs text-muted-foreground">{format(new Date(app.appliedAt), "MMM d")}</p>
-                        {app.matchScore != null && (
-                          <span className={`text-xs font-semibold ${app.matchScore >= 80 ? "text-emerald-400" : app.matchScore >= 50 ? "text-amber-400" : "text-red-400"}`}>
-                            {app.matchScore}% match
-                          </span>
-                        )}
-                        {app.status === "interviewing" && (
-                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                            <CalendarClock className="h-3 w-3 text-amber-400 shrink-0" />
-                            <input
-                              type="datetime-local"
-                              value={app.interviewAt ? format(new Date(app.interviewAt), "yyyy-MM-dd'T'HH:mm") : ""}
-                              onChange={(e) => handleInterviewChange(app.id, e.target.value || null)}
-                              className="text-xs bg-transparent border-0 text-amber-400/80 focus:text-amber-300 focus:outline-none w-full cursor-pointer [color-scheme:dark]"
-                              title="Schedule interview"
-                            />
+                  {col.map((app) => {
+                    const isSelected = selectedIds.has(app.id);
+                    return (
+                      <Card
+                        key={app.id}
+                        onClick={() => setSelectedApp(app)}
+                        className={`bg-card border transition-colors cursor-pointer ${isSelected ? "border-primary/60 bg-primary/5" : "border-border hover:border-primary/40"}`}
+                      >
+                        <CardContent className="p-3 space-y-1.5">
+                          <div className="flex items-start justify-between gap-1">
+                            <p className="text-xs font-semibold text-foreground leading-tight flex-1">{app.role}</p>
+                            <button
+                              onClick={(e) => toggleSelect(app.id, e)}
+                              className="shrink-0 text-muted-foreground/40 hover:text-primary transition-colors"
+                            >
+                              {isSelected ? <CheckSquare className="h-3.5 w-3.5 text-primary" /> : <Square className="h-3.5 w-3.5" />}
+                            </button>
                           </div>
-                        )}
-                        {(app.tailoredResume || app.coverLetter) && (
-                          <div className="flex items-center gap-1 pt-0.5">
-                            {app.tailoredResume && <FileText className="h-3 w-3 text-primary/60" title="Has tailored resume" />}
-                            {app.coverLetter && <Mail className="h-3 w-3 text-primary/60" title="Has cover letter" />}
+                          <p className="text-xs text-muted-foreground">{app.company}</p>
+                          <p className="text-xs text-muted-foreground">{format(new Date(app.appliedAt), "MMM d")}</p>
+                          {app.matchScore != null && (
+                            <span className={`text-xs font-semibold ${app.matchScore >= 80 ? "text-emerald-400" : app.matchScore >= 50 ? "text-amber-400" : "text-red-400"}`}>
+                              {app.matchScore}% match
+                            </span>
+                          )}
+                          {app.status === "interviewing" && (
+                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                              <CalendarClock className="h-3 w-3 text-amber-400 shrink-0" />
+                              <input
+                                type="datetime-local"
+                                value={app.interviewAt ? format(new Date(app.interviewAt), "yyyy-MM-dd'T'HH:mm") : ""}
+                                onChange={(e) => handleInterviewChange(app.id, e.target.value || null)}
+                                className="text-xs bg-transparent border-0 text-amber-400/80 focus:text-amber-300 focus:outline-none w-full cursor-pointer [color-scheme:dark]"
+                              />
+                            </div>
+                          )}
+                          {(app.tailoredResume || app.coverLetter || app.jobDescription) && (
+                            <div className="flex items-center gap-1.5 pt-0.5">
+                              {app.tailoredResume && <FileText className="h-3 w-3 text-primary/60" title="Has tailored resume" />}
+                              {app.coverLetter && <Mail className="h-3 w-3 text-primary/60" title="Has cover letter" />}
+                              {app.jobDescription && <Wand2 className="h-3 w-3 text-primary/40" title="Job description saved" />}
+                            </div>
+                          )}
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <InlineNotesEditor id={app.id} notes={app.notes} onSave={handleNotesChange} />
                           </div>
-                        )}
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <InlineNotesEditor id={app.id} notes={app.notes} onSave={handleNotesChange} />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                   {col.length === 0 && (
                     <div className="border border-dashed border-border rounded-md h-16 flex items-center justify-center">
                       <span className="text-xs text-muted-foreground/50">Empty</span>

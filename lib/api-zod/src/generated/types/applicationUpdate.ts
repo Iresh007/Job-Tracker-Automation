@@ -12,6 +12,8 @@ export interface ApplicationUpdate {
   /** @nullable */
   notes?: string | null;
   /** @nullable */
+  jobDescription?: string | null;
+  /** @nullable */
   tailoredResume?: string | null;
   /** @nullable */
   coverLetter?: string | null;
