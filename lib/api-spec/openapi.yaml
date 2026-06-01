@@ -525,6 +525,8 @@ components:
           type: ["string", "null"]
         jobDescription:
           type: ["string", "null"]
+        salary:
+          type: ["string", "null"]
         tailoredResume:
           type: ["string", "null"]
         coverLetter:
@@ -557,6 +559,8 @@ components:
           type: ["string", "null"]
         jobDescription:
           type: ["string", "null"]
+        salary:
+          type: ["string", "null"]
         tailoredResume:
           type: ["string", "null"]
         coverLetter:
@@ -577,6 +581,8 @@ components:
         notes:
           type: ["string", "null"]
         jobDescription:
+          type: ["string", "null"]
+        salary:
           type: ["string", "null"]
         tailoredResume:
           type: ["string", "null"]

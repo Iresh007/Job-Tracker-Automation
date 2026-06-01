@@ -1,6 +1,6 @@
-import { useGetDashboardStats, useGetDailyStats, useGetApplications } from "@workspace/api-client-react";
+import { useGetDashboardStats, useGetDailyStats, useGetApplications, useGetProfile } from "@workspace/api-client-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Target, Flame, TrendingUp, Send, Briefcase, ChevronRight, CalendarClock, Clock } from "lucide-react";
+import { Target, Flame, TrendingUp, Send, Briefcase, ChevronRight, CalendarClock, Clock, IndianRupee, TrendingDown, Award } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,10 +27,253 @@ function timeUntil(dt: Date): string {
   return format(dt, "MMM d");
 }
 
+/** Parse "₹12L–₹18L" or "₹12L - ₹18L" → [12, 18] in lakhs. Returns null if unparseable. */
+function parseSalaryLakhs(s: string | null | undefined): [number, number] | null {
+  if (!s) return null;
+  const nums = s.replace(/[₹,\s]/g, "").match(/(\d+(?:\.\d+)?)[Ll]/g);
+  if (!nums || nums.length < 1) return null;
+  const values = nums.map((n) => parseFloat(n));
+  if (values.length === 1) return [values[0], values[0]];
+  return [values[0], values[1]];
+}
+
+/** Convert ₹/year integer from profile → lakhs. e.g. 1200000 → 12 */
+function rupeeToLakhs(r: number | null | undefined): number | null {
+  if (!r) return null;
+  return Math.round((r / 100000) * 10) / 10;
+}
+
+function SalaryTracker({
+  applications,
+  profile,
+}: {
+  applications: ReturnType<typeof useGetApplications>["data"];
+  profile: ReturnType<typeof useGetProfile>["data"];
+}) {
+  const targetMin = rupeeToLakhs(profile?.salaryMin);
+  const targetMax = rupeeToLakhs(profile?.salaryMax);
+
+  // Get apps with salary data that are active (not rejected/ghosted)
+  const activeSalaryApps = (applications ?? [])
+    .filter((a) => a.salary && ["applied", "interviewing", "offer"].includes(a.status))
+    .map((a) => {
+      const parsed = parseSalaryLakhs(a.salary);
+      return parsed ? { ...a, salaryMin: parsed[0], salaryMax: parsed[1] } : null;
+    })
+    .filter(Boolean) as Array<NonNullable<ReturnType<typeof useGetApplications>["data"]>[number] & { salaryMin: number; salaryMax: number }>;
+
+  const offerApps = activeSalaryApps.filter((a) => a.status === "offer");
+  const interviewApps = activeSalaryApps.filter((a) => a.status === "interviewing");
+
+  const bestOffer = offerApps.length > 0
+    ? offerApps.reduce((best, a) => a.salaryMax > best.salaryMax ? a : best)
+    : null;
+
+  const allMidpoints = activeSalaryApps.map((a) => (a.salaryMin + a.salaryMax) / 2);
+  const avgSalary = allMidpoints.length > 0
+    ? Math.round(allMidpoints.reduce((s, v) => s + v, 0) / allMidpoints.length * 10) / 10
+    : null;
+
+  const hasData = activeSalaryApps.length > 0 || (targetMin != null && targetMax != null);
+
+  if (!hasData) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <IndianRupee className="h-4 w-4 text-emerald-400" /> Salary Tracker
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-6 space-y-2">
+            <IndianRupee className="h-10 w-10 mx-auto text-muted-foreground/20" />
+            <p className="text-sm text-muted-foreground">No salary data yet.</p>
+            <div className="flex flex-col gap-1 text-xs text-muted-foreground/70">
+              <Link href="/profile">
+                <span className="text-primary hover:underline cursor-pointer">Set your target salary range in Profile</span>
+              </Link>
+              <span>Jobs applied via Find Jobs will save their salary range automatically.</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Visual range bar
+  const allValues = [
+    ...(targetMin != null ? [targetMin] : []),
+    ...(targetMax != null ? [targetMax] : []),
+    ...activeSalaryApps.map((a) => a.salaryMin),
+    ...activeSalaryApps.map((a) => a.salaryMax),
+  ];
+  const barMin = Math.max(0, Math.min(...allValues) - 2);
+  const barMax = Math.max(...allValues) + 2;
+  const barRange = barMax - barMin;
+  const toPercent = (v: number) => Math.max(0, Math.min(100, ((v - barMin) / barRange) * 100));
+
+  // Bar rows: target + offer apps + interviewing apps (max 4 total)
+  const barRows: Array<{
+    label: string;
+    sublabel: string;
+    min: number;
+    max: number;
+    color: string;
+    isTarget?: boolean;
+  }> = [];
+
+  if (targetMin != null && targetMax != null) {
+    barRows.push({
+      label: "Your target",
+      sublabel: `₹${targetMin}L – ₹${targetMax}L`,
+      min: targetMin,
+      max: targetMax,
+      color: "bg-primary",
+      isTarget: true,
+    });
+  } else if (targetMin != null) {
+    barRows.push({ label: "Your target", sublabel: `₹${targetMin}L+`, min: targetMin, max: targetMin, color: "bg-primary", isTarget: true });
+  }
+
+  [...offerApps, ...interviewApps]
+    .slice(0, 4)
+    .forEach((a) => {
+      barRows.push({
+        label: a.company,
+        sublabel: a.salary ?? "",
+        min: a.salaryMin,
+        max: a.salaryMax,
+        color: a.status === "offer" ? "bg-emerald-500" : "bg-amber-500",
+      });
+    });
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <IndianRupee className="h-4 w-4 text-emerald-400" /> Salary Tracker
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {/* Key metrics */}
+        <div className="grid grid-cols-3 gap-3">
+          {targetMin != null && targetMax != null && (
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-center">
+              <p className="text-xs text-muted-foreground mb-1">Your target</p>
+              <p className="text-sm font-bold text-primary">₹{targetMin}L–{targetMax}L</p>
+            </div>
+          )}
+          {avgSalary != null && (
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center">
+              <p className="text-xs text-muted-foreground mb-1">Avg. offered</p>
+              <p className="text-sm font-bold text-blue-400">₹{avgSalary}L</p>
+            </div>
+          )}
+          {bestOffer && (
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Award className="h-3 w-3 text-emerald-400" />
+                <p className="text-xs text-muted-foreground">Best offer</p>
+              </div>
+              <p className="text-sm font-bold text-emerald-400">₹{bestOffer.salaryMax}L</p>
+            </div>
+          )}
+          {activeSalaryApps.length > 0 && (
+            <div className="bg-muted/30 border border-border rounded-lg p-3 text-center">
+              <p className="text-xs text-muted-foreground mb-1">With salary data</p>
+              <p className="text-sm font-bold text-foreground">{activeSalaryApps.length} apps</p>
+            </div>
+          )}
+        </div>
+
+        {/* Range bars */}
+        {barRows.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>₹{Math.ceil(barMin)}L</span>
+              <span>Salary Range (₹ Lakhs)</span>
+              <span>₹{Math.ceil(barMax)}L</span>
+            </div>
+            <div className="space-y-2.5">
+              {barRows.map((row, i) => (
+                <div key={i} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {row.isTarget
+                        ? <Target className="h-3 w-3 text-primary" />
+                        : <div className={`h-2 w-2 rounded-full ${row.color}`} />}
+                      <span className="text-xs font-medium text-foreground">{row.label}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{row.sublabel}</span>
+                  </div>
+                  <div className="relative h-3 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`absolute top-0 h-3 rounded-full opacity-80 ${row.color} ${row.isTarget ? "opacity-40 border border-primary" : ""}`}
+                      style={{
+                        left: `${toPercent(row.min)}%`,
+                        width: `${Math.max(3, toPercent(row.max) - toPercent(row.min))}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Comparison insight */}
+        {targetMin != null && targetMax != null && avgSalary != null && (
+          <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-md border ${
+            avgSalary >= targetMin
+              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+              : "bg-amber-500/10 border-amber-500/20 text-amber-400"
+          }`}>
+            {avgSalary >= targetMin
+              ? <TrendingUp className="h-3.5 w-3.5 shrink-0" />
+              : <TrendingDown className="h-3.5 w-3.5 shrink-0" />}
+            <span>
+              {avgSalary >= targetMin
+                ? `Avg. salary ₹${avgSalary}L is within your target range — you're on track!`
+                : `Avg. salary ₹${avgSalary}L is below your ₹${targetMin}L minimum — consider targeting higher-band roles.`}
+            </span>
+          </div>
+        )}
+
+        {/* Application list */}
+        {activeSalaryApps.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active pipeline</p>
+            <div className="divide-y divide-border">
+              {activeSalaryApps.slice(0, 5).map((a) => (
+                <div key={a.id} className="flex items-center justify-between py-2 first:pt-0">
+                  <div>
+                    <p className="text-xs font-medium text-foreground">{a.company}</p>
+                    <p className="text-xs text-muted-foreground">{a.role}</p>
+                  </div>
+                  <div className="text-right flex items-center gap-2">
+                    <Badge variant="outline" className={`text-xs capitalize ${STATUS_COLORS[a.status]}`}>{a.status}</Badge>
+                    <span className="text-xs font-semibold text-foreground">{a.salary}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {activeSalaryApps.length > 5 && (
+              <Link href="/applications">
+                <p className="text-xs text-primary hover:underline cursor-pointer">+{activeSalaryApps.length - 5} more</p>
+              </Link>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useGetDashboardStats();
   const { data: daily, isLoading: dailyLoading } = useGetDailyStats();
   const { data: applications, isLoading: appsLoading } = useGetApplications({ status: undefined, search: undefined });
+  const { data: profile } = useGetProfile();
 
   const now = new Date();
   const upcomingInterviews = (applications ?? [])
@@ -177,6 +420,11 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* Salary Tracker */}
+      {!appsLoading && (
+        <SalaryTracker applications={applications} profile={profile} />
+      )}
+
       {/* Upcoming Interviews */}
       {(appsLoading || upcomingInterviews.length > 0) && (
         <Card className="bg-card border-border">
@@ -258,6 +506,9 @@ export default function Dashboard() {
                     <p className="text-xs text-muted-foreground">{app.company}</p>
                   </div>
                   <div className="flex items-center gap-3">
+                    {app.salary && (
+                      <span className="text-xs text-emerald-400 font-medium hidden sm:block">{app.salary}</span>
+                    )}
                     <span className="text-xs text-muted-foreground">
                       {format(new Date(app.appliedAt), "MMM d")}
                     </span>
@@ -266,7 +517,7 @@ export default function Dashboard() {
                     </Badge>
                   </div>
                 </div>
-              ))}
+          ))}
             </div>
           )}
         </CardContent>

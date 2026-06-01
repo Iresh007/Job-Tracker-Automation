@@ -90,6 +90,7 @@ export default function Jobs() {
         applyUrl: job.applyUrl,
         matchScore: job.matchScore ?? null,
         jobDescription: job.description ?? null,
+        salary: job.salary ?? null,
         status: "applied",
       }
     });
@@ -110,6 +111,7 @@ export default function Jobs() {
           applyUrl: job.applyUrl,
           matchScore: job.matchScore ?? null,
           jobDescription: job.description ?? null,
+          salary: job.salary ?? null,
           status: "applied",
         }
       });
