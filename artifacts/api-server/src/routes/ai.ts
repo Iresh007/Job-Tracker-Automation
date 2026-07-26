@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
-import { db, profileTable } from "@workspace/db";
+import { db, profileTable, resumeScansTable } from "@workspace/db";
 import { TailorResumeBody, GetMatchScoreBody, AnalyzeResumeBody } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
+import { desc, eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -251,6 +252,106 @@ Return this exact JSON structure:
   } catch (err) {
     logger.error({ err }, "Resume analyze error");
     res.status(500).json({ error: "AI service unavailable. Please check your OPENAI_API_KEY." });
+  }
+});
+
+// --- Resume Scan History ---
+
+router.get("/ai/resume-history", async (_req, res): Promise<void> => {
+  try {
+    const scans = await db
+      .select()
+      .from(resumeScansTable)
+      .orderBy(desc(resumeScansTable.scannedAt))
+      .limit(50);
+
+    res.json(
+      scans.map((s) => ({
+        id: s.id,
+        atsScore: s.atsScore,
+        targetRole: s.targetRole,
+        summary: s.summary,
+        sections: s.sections,
+        keywordsFound: s.keywordsFound,
+        keywordsMissing: s.keywordsMissing,
+        strengths: s.strengths,
+        improvements: s.improvements,
+        scannedAt: s.scannedAt.toISOString(),
+      }))
+    );
+  } catch (err) {
+    logger.error({ err }, "Failed to fetch resume history");
+    res.status(500).json({ error: "Failed to fetch resume history" });
+  }
+});
+
+router.post("/ai/resume-history", async (req, res): Promise<void> => {
+  const { atsScore, targetRole, summary, sections, keywordsFound, keywordsMissing, strengths, improvements } = req.body as {
+    atsScore: number;
+    targetRole?: string | null;
+    summary?: string | null;
+    sections: Array<{ name: string; score: number; feedback: string; suggestions: string[] }>;
+    keywordsFound: string[];
+    keywordsMissing: string[];
+    strengths: string[];
+    improvements: string[];
+  };
+
+  if (typeof atsScore !== "number" || !Array.isArray(sections)) {
+    res.status(400).json({ error: "atsScore and sections are required" });
+    return;
+  }
+
+  try {
+    const [saved] = await db
+      .insert(resumeScansTable)
+      .values({
+        atsScore,
+        targetRole: targetRole ?? null,
+        summary: summary ?? null,
+        sections,
+        keywordsFound: keywordsFound ?? [],
+        keywordsMissing: keywordsMissing ?? [],
+        strengths: strengths ?? [],
+        improvements: improvements ?? [],
+      })
+      .returning();
+
+    if (!saved) {
+      res.status(500).json({ error: "Failed to save scan" });
+      return;
+    }
+
+    res.status(201).json({
+      id: saved.id,
+      atsScore: saved.atsScore,
+      targetRole: saved.targetRole,
+      summary: saved.summary,
+      sections: saved.sections,
+      keywordsFound: saved.keywordsFound,
+      keywordsMissing: saved.keywordsMissing,
+      strengths: saved.strengths,
+      improvements: saved.improvements,
+      scannedAt: saved.scannedAt.toISOString(),
+    });
+  } catch (err) {
+    logger.error({ err }, "Failed to save resume scan");
+    res.status(500).json({ error: "Failed to save scan" });
+  }
+});
+
+router.delete("/ai/resume-history/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id ?? "", 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  try {
+    await db.delete(resumeScansTable).where(eq(resumeScansTable.id, id));
+    res.status(204).send();
+  } catch (err) {
+    logger.error({ err }, "Failed to delete resume scan");
+    res.status(500).json({ error: "Failed to delete scan" });
   }
 });
 

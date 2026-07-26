@@ -28,6 +28,8 @@ export * from './matchScoreInput';
 export * from './matchScoreResult';
 export * from './profile';
 export * from './profileInput';
+export * from './resumeScanEntry';
+export * from './resumeScanInput';
 export * from './resumeSection';
 export * from './savedJob';
 export * from './savedJobInput';

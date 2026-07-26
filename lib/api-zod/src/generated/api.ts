@@ -347,6 +347,57 @@ export const AnalyzeResumeResponse = zod.object({
 
 
 /**
+ * @summary List past resume scan results ordered by most recent
+ */
+export const GetResumeHistoryResponseItem = zod.object({
+  "id": zod.number(),
+  "atsScore": zod.number(),
+  "targetRole": zod.string().nullish(),
+  "summary": zod.string().nullish(),
+  "sections": zod.array(zod.object({
+  "name": zod.string(),
+  "score": zod.number(),
+  "feedback": zod.string(),
+  "suggestions": zod.array(zod.string())
+})),
+  "keywordsFound": zod.array(zod.string()),
+  "keywordsMissing": zod.array(zod.string()),
+  "strengths": zod.array(zod.string()),
+  "improvements": zod.array(zod.string()),
+  "scannedAt": zod.string()
+})
+export const GetResumeHistoryResponse = zod.array(GetResumeHistoryResponseItem)
+
+
+/**
+ * @summary Save a resume analysis result to history
+ */
+export const SaveResumeScanBody = zod.object({
+  "atsScore": zod.number(),
+  "targetRole": zod.string().nullish(),
+  "summary": zod.string().nullish(),
+  "sections": zod.array(zod.object({
+  "name": zod.string(),
+  "score": zod.number(),
+  "feedback": zod.string(),
+  "suggestions": zod.array(zod.string())
+})),
+  "keywordsFound": zod.array(zod.string()),
+  "keywordsMissing": zod.array(zod.string()),
+  "strengths": zod.array(zod.string()),
+  "improvements": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Delete a resume scan entry
+ */
+export const DeleteResumeScanParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Get dashboard summary stats
  */
 export const GetDashboardStatsResponse = zod.object({

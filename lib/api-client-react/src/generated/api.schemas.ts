@@ -263,6 +263,34 @@ export interface AnalyzeResumeResult {
   summary?: string;
 }
 
+export interface ResumeScanEntry {
+  id: number;
+  atsScore: number;
+  /** @nullable */
+  targetRole?: string | null;
+  /** @nullable */
+  summary?: string | null;
+  sections: ResumeSection[];
+  keywordsFound: string[];
+  keywordsMissing: string[];
+  strengths: string[];
+  improvements: string[];
+  scannedAt: string;
+}
+
+export interface ResumeScanInput {
+  atsScore: number;
+  /** @nullable */
+  targetRole?: string | null;
+  /** @nullable */
+  summary?: string | null;
+  sections: ResumeSection[];
+  keywordsFound: string[];
+  keywordsMissing: string[];
+  strengths: string[];
+  improvements: string[];
+}
+
 export type DashboardStatsStatusBreakdown = {
   applied: number;
   interviewing: number;

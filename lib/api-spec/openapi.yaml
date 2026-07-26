@@ -342,6 +342,53 @@ paths:
               schema:
                 $ref: "#/components/schemas/AnalyzeResumeResult"
 
+  /ai/resume-history:
+    get:
+      operationId: getResumeHistory
+      tags: [ai]
+      summary: List past resume scan results ordered by most recent
+      responses:
+        "200":
+          description: Resume scan history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ResumeScanEntry"
+    post:
+      operationId: saveResumeScan
+      tags: [ai]
+      summary: Save a resume analysis result to history
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResumeScanInput"
+      responses:
+        "201":
+          description: Saved scan entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeScanEntry"
+
+  /ai/resume-history/{id}:
+    delete:
+      operationId: deleteResumeScan
+      tags: [ai]
+      summary: Delete a resume scan entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   # === STATS ===
   /stats/dashboard:
     get:
@@ -747,6 +794,72 @@ components:
             type: string
         summary:
           type: string
+
+    ResumeScanEntry:
+      type: object
+      required: [id, atsScore, sections, keywordsFound, keywordsMissing, strengths, improvements, scannedAt]
+      properties:
+        id:
+          type: integer
+        atsScore:
+          type: integer
+        targetRole:
+          type: ["string", "null"]
+        summary:
+          type: ["string", "null"]
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResumeSection"
+        keywordsFound:
+          type: array
+          items:
+            type: string
+        keywordsMissing:
+          type: array
+          items:
+            type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        improvements:
+          type: array
+          items:
+            type: string
+        scannedAt:
+          type: string
+
+    ResumeScanInput:
+      type: object
+      required: [atsScore, sections, keywordsFound, keywordsMissing, strengths, improvements]
+      properties:
+        atsScore:
+          type: integer
+        targetRole:
+          type: ["string", "null"]
+        summary:
+          type: ["string", "null"]
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResumeSection"
+        keywordsFound:
+          type: array
+          items:
+            type: string
+        keywordsMissing:
+          type: array
+          items:
+            type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        improvements:
+          type: array
+          items:
+            type: string
 
     # --- Stats ---
     DashboardStats:

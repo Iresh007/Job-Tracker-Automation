@@ -36,6 +36,8 @@ import type {
   MatchScoreResult,
   Profile,
   ProfileInput,
+  ResumeScanEntry,
+  ResumeScanInput,
   SavedJob,
   SavedJobInput,
   SearchJobsParams,
@@ -1239,6 +1241,224 @@ export const useAnalyzeResume = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAnalyzeResumeMutationOptions(options));
+    }
+
+export const getGetResumeHistoryUrl = () => {
+
+
+
+
+  return `/api/ai/resume-history`
+}
+
+/**
+ * @summary List past resume scan results ordered by most recent
+ */
+export const getResumeHistory = async ( options?: RequestInit): Promise<ResumeScanEntry[]> => {
+
+  return customFetch<ResumeScanEntry[]>(getGetResumeHistoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetResumeHistoryQueryKey = () => {
+    return [
+    `/api/ai/resume-history`
+    ] as const;
+    }
+
+
+export const getGetResumeHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getResumeHistory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getResumeHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetResumeHistoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getResumeHistory>>> = ({ signal }) => getResumeHistory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getResumeHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetResumeHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getResumeHistory>>>
+export type GetResumeHistoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List past resume scan results ordered by most recent
+ */
+
+export function useGetResumeHistory<TData = Awaited<ReturnType<typeof getResumeHistory>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getResumeHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetResumeHistoryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveResumeScanUrl = () => {
+
+
+
+
+  return `/api/ai/resume-history`
+}
+
+/**
+ * @summary Save a resume analysis result to history
+ */
+export const saveResumeScan = async (resumeScanInput: ResumeScanInput, options?: RequestInit): Promise<ResumeScanEntry> => {
+
+  return customFetch<ResumeScanEntry>(getSaveResumeScanUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      resumeScanInput,)
+  }
+);}
+
+
+
+
+export const getSaveResumeScanMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveResumeScan>>, TError,{data: BodyType<ResumeScanInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveResumeScan>>, TError,{data: BodyType<ResumeScanInput>}, TContext> => {
+
+const mutationKey = ['saveResumeScan'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveResumeScan>>, {data: BodyType<ResumeScanInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveResumeScan(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveResumeScanMutationResult = NonNullable<Awaited<ReturnType<typeof saveResumeScan>>>
+    export type SaveResumeScanMutationBody = BodyType<ResumeScanInput>
+    export type SaveResumeScanMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Save a resume analysis result to history
+ */
+export const useSaveResumeScan = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveResumeScan>>, TError,{data: BodyType<ResumeScanInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveResumeScan>>,
+        TError,
+        {data: BodyType<ResumeScanInput>},
+        TContext
+      > => {
+      return useMutation(getSaveResumeScanMutationOptions(options));
+    }
+
+export const getDeleteResumeScanUrl = (id: number,) => {
+
+
+
+
+  return `/api/ai/resume-history/${id}`
+}
+
+/**
+ * @summary Delete a resume scan entry
+ */
+export const deleteResumeScan = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteResumeScanUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteResumeScanMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteResumeScan>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteResumeScan>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteResumeScan'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteResumeScan>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteResumeScan(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteResumeScanMutationResult = NonNullable<Awaited<ReturnType<typeof deleteResumeScan>>>
+
+    export type DeleteResumeScanMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a resume scan entry
+ */
+export const useDeleteResumeScan = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteResumeScan>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteResumeScan>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteResumeScanMutationOptions(options));
     }
 
 export const getGetDashboardStatsUrl = () => {
