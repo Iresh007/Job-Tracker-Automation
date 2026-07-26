@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    ignore:
+      # ── esbuild ──────────────────────────────────────────────────────────────
+      # esbuild is pinned to a specific version via `overrides` in
+      # pnpm-workspace.yaml and all 20+ optional platform-specific packages are
+      # stripped to "-". Dependabot cannot resolve this dependency graph and will
+      # always fail with an unknown_error.
+      # To update esbuild: change the `esbuild: "x.y.z"` override in
+      # pnpm-workspace.yaml and run `pnpm install`.
+      - dependency-name: "esbuild"
+      - dependency-name: "@esbuild/*"
+
+      # ── vite / rolldown ───────────────────────────────────────────────────────
+      # Vite 7.x bundles rolldown as its internal bundler. rolldown ships
+      # platform-specific optional packages that are all overridden to "-" in
+      # pnpm-workspace.yaml. Dependabot cannot resolve the vite → rolldown
+      # dependency tree and fails with dependency_file_not_resolvable.
+      # To update vite: bump the catalog entry in pnpm-workspace.yaml and verify
+      # the rolldown platform overrides are still complete for the new rolldown
+      # version that vite pulls in.
+      - dependency-name: "vite"
+      - dependency-name: "rolldown"
+      - dependency-name: "@rolldown/*"
